@@ -1,0 +1,161 @@
+package server
+
+import (
+	"net"
+	"socket/chatroom/conf"
+	"fmt"
+	"socket/chatroom/libary/util"
+	"strings"
+	"bufio"
+	"os"
+)
+
+type tcp struct {
+     tcpAddr *net.TCPAddr
+     tcpListen *net.TCPListener
+     conn *Conn
+}
+
+type Conn struct {
+	 clientInfo string
+	 clientMsg chan string
+	 inputMsg  chan string
+	 retMsg    string
+}
+
+var(
+	G_tcp *tcp
+	err error
+)
+
+func InitTcp()  {
+	 G_tcp = &tcp{
+	 	conn:&Conn{
+           clientMsg:make(chan string),
+           inputMsg:make(chan string),
+		},
+	 }
+	G_tcp.Listen()
+}
+
+func (t *tcp)  Listen() {
+	var(
+		conn *net.TCPConn
+	)
+	if t.tcpAddr,err =  net.ResolveTCPAddr("tcp",conf.GetTcpServerAddress());err!=nil{
+          goto PrintErr
+	}
+	if t.tcpListen,err = net.ListenTCP("tcp",t.tcpAddr);err!=nil{
+		  goto PrintErr
+	}
+	fmt.Println("服务器信息,Network:",t.tcpListen.Addr().Network(),"  String:",t.tcpListen.Addr().String())
+	defer t.tcpListen.Close()
+	for{
+		if conn,err = t.tcpListen.AcceptTCP();err!=nil{
+             continue
+		}
+		go t.handleClient(conn)
+	}
+	return
+	PrintErr:
+		fmt.Println("error:",err.Error())
+	    return
+}
+
+
+func (t *tcp) handleClient(conn *net.TCPConn)  {
+	fmt.Println("Server conn RemoteAddr:",conn.RemoteAddr().String(),"  LocalAddr:",conn.LocalAddr().String())
+	defer conn.Close()
+    go t.readMsg(conn)
+	go t.getWriteMsg(conn)
+    var(
+    	msg string
+	)
+	for{
+		select {
+		case msg = <-t.conn.clientMsg:
+			   printMsgInfo(msg,conn)
+		       if checkIsBye(msg){
+				   goto Start
+			   }
+		case msg = <-t.conn.inputMsg:
+			  t.WriteMsg(conn,msg)
+				if checkIsBye(msg){
+					goto Start
+				}
+		}
+	}
+	Start:
+}
+
+func (t *tcp) readMsg(conn *net.TCPConn)  {
+	var(
+		buf []byte
+		readMsg string
+		err error
+	)
+    for{
+    	if conn == nil{
+    		goto ConnClose
+		}
+    	buf = make([]byte,1024)
+         if _,err = conn.Read(buf);err!=nil{
+         	continue
+		 }
+		 readMsg = util.ByteToString(buf)
+	 	 t.conn.clientMsg<-readMsg
+	 	 if checkIsBye(readMsg){
+			  goto ConnClose
+		  }
+	   }
+	ConnClose:
+		t.Close(conn)
+	    return
+}
+
+
+func (t *tcp) WriteMsg(conn *net.TCPConn,msg string)  {
+	conn.Write([]byte(msg))
+}
+
+
+func (t *tcp) getWriteMsg(conn *net.TCPConn)  {
+	var(
+		msg string
+	)
+	for{
+	    if msg,err = getStdinMsg();err!=nil{
+             goto Loop
+		 }
+		msg = strings.TrimSpace(msg)
+		t.conn.inputMsg <- msg
+		if checkIsBye(msg){
+			goto Loop
+		}
+	}
+	Loop:
+		 t.Close(conn)
+		 fmt.Println("input bye")
+}
+
+
+func (t *tcp) Close(conn *net.TCPConn)  {
+	if 	conn!=nil{
+		  conn.Close()
+	}
+	fmt.Println("close conn")
+}
+
+
+func checkIsBye(msg string) bool {
+	return strings.EqualFold(msg,"bye")
+}
+
+func getStdinMsg() (msg string ,err error) {
+	 return  bufio.NewReader(os.Stdin).ReadString('\n')
+}
+
+func printMsgInfo(msg string,conn *net.TCPConn)  {
+	fmt.Printf("[%s]:%s\n",conn.RemoteAddr().String(),msg)
+}
+

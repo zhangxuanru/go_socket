@@ -1,0 +1,232 @@
+package server
+
+import (
+	"net"
+	"socket/chatroom/conf"
+	"fmt"
+	"socket/chatroom/libary/util"
+	"strings"
+	"bufio"
+	"os"
+	"runtime"
+)
+
+type tcp struct {
+     tcpAddr *net.TCPAddr
+     tcpListen *net.TCPListener
+     conn *Conn
+}
+
+type Conn struct {
+	 clientInfo string
+	 clientMsg chan string
+	 inputMsg  chan string
+	 retMsg    string
+}
+
+var(
+	G_tcp *tcp
+	err error
+	clients map[string]*net.TCPConn
+)
+
+func InitTcp()  {
+	 G_tcp = &tcp{
+	 	conn:&Conn{
+           clientMsg:make(chan string),
+           inputMsg:make(chan string),
+		},
+	 }
+	clients = make(map[string]*net.TCPConn)
+	G_tcp.Listen()
+}
+
+func (t *tcp)  Listen() {
+	var(
+		conn *net.TCPConn
+	)
+	if t.tcpAddr,err =  net.ResolveTCPAddr("tcp",conf.GetTcpServerAddress());err!=nil{
+          goto PrintErr
+	}
+	if t.tcpListen,err = net.ListenTCP("tcp",t.tcpAddr);err!=nil{
+		  goto PrintErr
+	}
+	fmt.Println("服务器信息,Network:",t.tcpListen.Addr().Network(),"  String:",t.tcpListen.Addr().String())
+	defer t.tcpListen.Close()
+	for{
+		if conn,err = t.tcpListen.AcceptTCP();err!=nil{
+             continue
+		}
+		AddClient(conn)
+		go t.handleClient(conn)
+	}
+	return
+	PrintErr:
+		fmt.Println("error:",err.Error())
+	    return
+}
+
+
+func (t *tcp) handleClient(conn *net.TCPConn)  {
+	fmt.Println("Server conn RemoteAddr:",conn.RemoteAddr().String(),"  LocalAddr:",conn.LocalAddr().String())
+	defer conn.Close()
+     go t.readMsg(conn)
+	 go t.getWriteMsg(conn)
+    var(
+    	msg string
+	)
+	for{
+		select {
+		case msg = <-t.conn.clientMsg:
+			   printMsgInfo(msg,conn)
+			   t.WriteChatRoomMsg(conn,msg) //群发
+		       if checkIsBye(msg){
+				   goto Start
+			   }
+		case msg = <-t.conn.inputMsg:
+			    //t.WriteMsg(conn,msg)  //单发
+			     t.WriteRoomMsg(conn,msg)
+				if checkIsBye(msg){
+					goto Start
+				}
+		}
+	}
+	Start:
+		fmt.Println("close--chan")
+	    return
+}
+
+func (t *tcp) readMsg(conn *net.TCPConn)  {
+	var(
+		buf []byte
+		readMsg string
+		err error
+	)
+	for{
+    	if conn == nil {
+    		goto ConnClose
+		}
+    	buf = make([]byte,1024)
+         if _,err = conn.Read(buf);err!=nil{
+         	continue
+		 }
+		 fmt.Println("read msg :",conn.RemoteAddr().String())
+		 readMsg = util.ByteToString(buf)
+	 	 t.conn.clientMsg<-readMsg
+	 	 if checkIsBye(readMsg){
+			  goto ConnClose
+		  }
+	   }
+	ConnClose:
+		fmt.Println("read close---")
+		t.Close(conn)
+	    return
+}
+
+
+func (t *tcp) WriteMsg(conn *net.TCPConn,msg string)  {
+	conn.Write([]byte(msg))
+}
+
+func (t *tcp) WriteChatRoomMsg(conn *net.TCPConn,msg string)  {
+		if strings.EqualFold(msg,"bye") {
+			 return
+		}
+        for _,client := range clients{
+			if checkClientEqual(client,conn) == false {
+				   fmt.Println(client.RemoteAddr().String())
+        	      client.Write([]byte(msg))
+			}
+		}
+}
+
+func (t *tcp) WriteRoomMsg(conn *net.TCPConn,msg string)  {
+	for _,client := range clients{
+			client.Write([]byte(msg))
+	}
+}
+
+
+
+func (t *tcp) getWriteMsg(conn *net.TCPConn)  {
+	var(
+		msg string
+	)
+	for{
+		if conn == nil{
+			goto Loop
+		}
+	    if msg,err = getStdinMsg();err!=nil{
+             goto Loop
+		 }
+		msg = strings.TrimSpace(msg)
+		t.conn.inputMsg <- msg
+		if checkIsBye(msg){
+			goto Loop
+		}
+	}
+	Loop:
+		fmt.Println("input bye")
+	    t.Close(conn)
+}
+
+
+func (t *tcp) Close(conn *net.TCPConn)  {
+	if 	conn!=nil{
+	      DelClient(conn)
+		  conn.Close()
+	}
+	conn = nil
+	fmt.Println("close conn")
+}
+
+
+func checkIsBye(msg string) bool {
+	return strings.EqualFold(msg,"bye")
+}
+
+func getStdinMsg() (msg string ,err error) {
+	 return  bufio.NewReader(os.Stdin).ReadString('\n')
+}
+
+func printMsgInfo(msg string,conn *net.TCPConn)  {
+	fmt.Println("NumGoroutine:",runtime.NumGoroutine())
+	fmt.Printf("[%s]:%s\n",conn.RemoteAddr().String(),msg)
+}
+
+func AddClient(conn *net.TCPConn)  {
+	 key := generyTcpClientKey(conn)
+	 if clientsHasConn(conn) == false{
+		 clients[key] = conn
+	 }
+}
+
+func DelClient(conn *net.TCPConn)  {
+	if conn == nil{
+		return
+	}
+	key := generyTcpClientKey(conn)
+	if clientsHasConn(conn) == true{
+		delete(clients,key)
+	}
+}
+
+
+
+func generyTcpClientKey(conn *net.TCPConn) (key string) {
+	return conn.RemoteAddr().String()
+}
+
+func clientsHasConn(conn *net.TCPConn) (bool) {
+	key := generyTcpClientKey(conn)
+	if _,ok:= clients[key];ok == true{
+		return true
+	}
+	return false
+}
+
+func checkClientEqual(addr1,addr2 *net.TCPConn) bool {
+	   addr1Key := generyTcpClientKey(addr1)
+	   addr2Key := generyTcpClientKey(addr2)
+	   return  strings.EqualFold(addr1Key,addr2Key)
+}

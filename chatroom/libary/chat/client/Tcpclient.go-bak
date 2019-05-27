@@ -1,0 +1,164 @@
+package client
+
+import (
+	"net"
+	"socket/chatroom/conf"
+	"fmt"
+	"os"
+	"bufio"
+	"socket/chatroom/libary/util"
+	"strings"
+	"os/signal"
+	"syscall"
+)
+
+type TcpClient struct {
+    serverTcpAddr *net.TCPAddr
+    serverTcpConn *net.TCPConn
+    inputMsg chan string
+    readServerMsg chan string
+    signal chan os.Signal
+    closeChan chan bool
+	closeStatus bool
+}
+
+func InitTcpClient()  {
+	tcp:= TcpClient{
+		inputMsg:make(chan string),
+		readServerMsg:make(chan string),
+		closeChan:make(chan bool),
+		signal: make(chan os.Signal),
+		closeStatus:false,
+	}
+	signal.Notify(tcp.signal, syscall.SIGINT, syscall.SIGTERM)
+	tcp.connServer()
+	tcp.handle()
+}
+
+var(
+	err error
+)
+
+func (client *TcpClient) connServer()  {
+	if client.serverTcpAddr,err = net.ResolveTCPAddr("tcp",conf.GetTcpServerAddress());err!=nil{
+          goto printErr
+	}
+	if client.serverTcpConn,err = net.DialTCP("tcp",nil,client.serverTcpAddr);err!=nil{
+		goto printErr
+	}
+	fmt.Printf("连接 %s 成功\n",conf.GetTcpServerAddress())
+    return
+	printErr:
+		fmt.Println("error:",err.Error())
+ 	    return
+}
+
+func (client *TcpClient) handle()  {
+	var(
+		msg string
+	)
+     go client.readMsg()
+     go client.intoMsgChan()
+     for{
+     	//if client.closeStatus == true{
+     	//	 goto close
+		//}
+		 select {
+		 case msg = <- client.inputMsg:
+		 	     client.writeMsg(msg)
+		 case msg = <-client.readServerMsg:
+			    fmt.Printf("[%s:]:%s\n",client.serverTcpConn.LocalAddr().String(),msg)
+		 case <-client.signal:
+			     client.writeMsg("bye")
+			     goto close
+		 case <-client.closeChan:
+		 	    fmt.Println("close chan")
+			    goto close
+		 }
+	 }
+	 return
+	close:
+		client.close()
+		fmt.Println("hand close")
+}
+
+
+func (client *TcpClient) writeMsg(msg string)  {
+      client.serverTcpConn.Write([]byte(msg))
+}
+
+func (client *TcpClient) readMsg()  {
+	var(
+		buf []byte
+		msg string
+	)
+	err = nil
+    for{
+		if client.serverTcpConn == nil || client.closeStatus == true{
+			goto close
+		}
+		   buf = make([]byte,1024)
+    	   if client.serverTcpConn == nil{
+    		  goto close
+		   }
+      	   if _,err = client.serverTcpConn.Read(buf);err!=nil{
+      	   	   goto close
+		   }
+		   msg = util.ByteToString(buf)
+		   client.readServerMsg<-msg
+		   if strings.EqualFold(msg,"bye"){
+		   	    goto close
+		   }
+	  }
+	close:
+		client.sendCloseChan()
+		client.close()
+		fmt.Println("read close")
+}
+
+func (client *TcpClient) intoMsgChan()  {
+	 var(
+	 	msg string
+	 )
+	 for{
+	 	if client.serverTcpConn == nil || client.closeStatus == true{
+			goto close
+		}
+		 if msg,err = getStdinMsg();err!=nil{
+               goto close
+		 }
+		 msg = strings.TrimSpace(msg)
+		 client.inputMsg <-msg
+		 if strings.EqualFold(msg,"bye"){
+             goto close
+		 }
+	 }
+	close:
+		client.sendCloseChan()
+		client.close()
+	    fmt.Println("input close")
+}
+
+func (client *TcpClient) close()  {
+     if client.serverTcpConn!=nil{
+		   //client.writeMsg("bye")
+     	   client.serverTcpConn.Close()
+	 }
+	   client.closeStatus = true
+}
+
+
+func (client *TcpClient) sendCloseChan()  {
+	fmt.Println("send close chan",client.closeStatus)
+	if  client.closeStatus == false{
+		 client.closeChan<-true
+	}
+}
+
+
+func getStdinMsg() (msg string ,err error) {
+	return  bufio.NewReader(os.Stdin).ReadString('\n')
+}
+
+
+

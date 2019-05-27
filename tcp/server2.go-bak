@@ -1,0 +1,66 @@
+package main
+
+import (
+	"net"
+	"fmt"
+	"bufio"
+	"strings"
+)
+
+func main()  {
+	startServer()
+}
+
+func startServer()  {
+	var(
+		listener net.Listener
+		conn net.Conn
+		err error
+	)
+	if listener,err = net.Listen("tcp",":2000");err!=nil{
+        fmt.Println("TCP服务启动失败，失败原因:",err.Error())
+        return
+	}
+	fmt.Println("TCP服务启动成功---")
+	fmt.Println("服务器信息,Network:",listener.Addr().Network(),"  String:",listener.Addr().String())
+	defer listener.Close()
+	for{
+	    if conn,err = listener.Accept();err!=nil{
+			fmt.Println("TCP服务读取数据失败，失败原因:",err.Error())
+			break
+		}
+		go handleConnection(conn)
+	}
+}
+
+func handleConnection(conn net.Conn)  {
+	var(
+		readMsg string
+		err error
+	)
+	fmt.Println("Server conn RemoteAddr:",conn.RemoteAddr().String(),"  LocalAddr:",conn.LocalAddr().String())
+	for{
+		if conn == nil{
+			fmt.Println("无效的 socket 连接")
+			return
+		}
+	    if readMsg,err =  bufio.NewReader(conn).ReadString('\n');err!=nil{
+           fmt.Println("读取消息错误:",err.Error())
+           return
+		}
+		readMsg = strings.TrimSpace(readMsg)
+		if strings.EqualFold(readMsg,"Bye"){
+			fmt.Println("close conn")
+            break
+		}
+		if _,err := conn.Write([]byte(fmt.Sprintf("HI，字符串长度是:%d\r\n",len(readMsg))));err!=nil{
+			fmt.Println("send error,",err.Error())
+		}
+		fmt.Println("send OK")
+	}
+	conn.Close()
+}
+
+
+
+
