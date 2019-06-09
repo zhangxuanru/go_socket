@@ -21,6 +21,7 @@ func (s *StdInIo) OutStdInMsgByChan(outMsg chan<- string) {
 		msg string
 		err error
 	)
+	fmt.Println("please input msg :")
 	for {
 		select {
 		case <-s.IsCloseChan:
@@ -38,6 +39,10 @@ func (s *StdInIo) OutStdInMsgByChan(outMsg chan<- string) {
 	}
 END:
 	fmt.Println("input close")
+}
+
+func (s *StdInIo) Close() {
+	s.IsCloseChan <- true
 }
 
 func NewStdInIo() *StdInIo {

@@ -4,7 +4,8 @@ import "net"
 
 type SocketSendBase interface {
 	Write(conn *net.TCPConn, data []byte) (int, error)
-	Read(conn *net.TCPConn) ([]byte, error)
+	Read(conn *net.TCPConn,readMsgChan chan []byte) (error)
+	Receive(receiveMsg []byte)
 	Close(conn *net.TCPConn) error
 }
 
@@ -16,10 +17,15 @@ type SocketBase struct {
 type ClientMsg struct {
 	InputMsg     string
 	InputMsgChan chan string
+	ReadMsg      []byte
+	ReadMsgChan chan []byte
+	IsCloseChan  chan bool
 }
 
-func NewClientMsg() ClientMsg {
-	return ClientMsg{
+func NewClientMsg() *ClientMsg {
+	return &ClientMsg{
 		InputMsgChan: make(chan string),
+		ReadMsgChan:make(chan []byte),
+		IsCloseChan:make(chan bool),
 	}
 }

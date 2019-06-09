@@ -1,7 +1,7 @@
 package main
 
-import "socket/app/protocol/tcp"
+import "socket/app/protocol/client"
 
 func main() {
-	tcp.Init()
+	client.Init()
 }
