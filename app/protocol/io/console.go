@@ -42,6 +42,7 @@ END:
 }
 
 func (s *StdInIo) Close() {
+	fmt.Println("---input--close")
 	go func() {
 		s.IsCloseChan <- true
 	}()

@@ -59,17 +59,16 @@ func (c *Client) handle() {
 		select {
 		case c.ClientMsg.InputMsg = <-c.InputMsgChan:
 			  socketIo.WriteData(c.ClientMsg.InputMsg)
-		      socketIo.CheckBye(c.ClientMsg.InputMsg,c.IsCloseChan)
+		      socketIo.CheckBye([]byte(c.ClientMsg.InputMsg),c.IsCloseChan)
 		case c.ClientMsg.ReadMsg = <-c.ReadMsgChan:
 			  socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
-			  socketIo.CheckBye(string(c.ClientMsg.ReadMsg),c.IsCloseChan)
-		case   <-c.IsCloseChan:
-			   fmt.Println("IsCloseChan--true")
+			  socketIo.CheckBye(c.ClientMsg.ReadMsg,c.IsCloseChan)
+		case  <-c.IsCloseChan:
                goto  END
 		}
 	}
 	END:
-		fmt.Println("handle end ")
+		fmt.Println("handle end")
 	    stdInIo.Close()
 	    socketIo.SocketPack.Close(c.TcpConn)
 }

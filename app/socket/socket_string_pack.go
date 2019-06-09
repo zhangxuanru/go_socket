@@ -28,6 +28,7 @@ func (s *stringPack) Read(conn *net.TCPConn,readChan chan []byte) (err error) {
 		if _, err = conn.Read(buf); err != nil {
 			 goto CLOSE
 		}
+
 		readChan <- buf
 	}
 	return   err

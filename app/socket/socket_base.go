@@ -27,6 +27,7 @@ type ClientMsg struct {
 	ReadMsg      []byte
 	ReadMsgChan chan []byte
 	IsCloseChan  chan bool
+	IsCloseServerChan chan bool
 }
 
 func NewClientMsg() *ClientMsg {
@@ -34,6 +35,7 @@ func NewClientMsg() *ClientMsg {
 		InputMsgChan: make(chan string),
 		ReadMsgChan:make(chan []byte),
 		IsCloseChan:make(chan bool),
+		IsCloseServerChan:make(chan bool),
 	}
 }
 

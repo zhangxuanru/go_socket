@@ -2,6 +2,7 @@ package socket
 
 import (
 	"strings"
+	"socket/app/common"
 )
 
 const SEND_STRING = 1
@@ -28,8 +29,9 @@ func (s *SocketIo) WriteData(msg string) {
 	s.SocketPack.Write(s.TcpConn, []byte(msg))
 }
 
-func (s *SocketIo) CheckBye (msg string,IsCloseChan chan bool)  {
-    if strings.EqualFold(msg,"bye"){
+func (s *SocketIo) CheckBye (msg []byte,IsCloseChan chan bool)  {
+	msgStr := common.ByteToString(msg)
+    if common.IsMsgBye(msgStr){
     	go func() {
 			IsCloseChan<-true
 		}()

@@ -62,17 +62,17 @@ func (s *server) handleClient(conn *net.TCPConn) {
 	 sockConnBase := socket.NewSocketBase(s.tcpAddr,conn)
 	 s.SocketIo = socket.NewSocketIo(sockConnBase)
 	 go s.SocketIo.SocketPack.Read(conn,s.ReadMsgChan)
+
      for{
 		 select {
 		 case s.InputMsg = <- s.InputMsgChan:
-		 	fmt.Println("--server input--:")
                s.SocketIo.SocketPack.Write(conn,[]byte(s.InputMsg))
-		       s.SocketIo.CheckBye(s.InputMsg,s.IsCloseChan)
+		       s.SocketIo.CheckBye([]byte(s.InputMsg),s.IsCloseServerChan)
 		 case s.ReadMsg = <-s.ReadMsgChan:
-		 	fmt.Println("---server read :--")
 		 	   s.SocketIo.SocketPack.Receive(s.ReadMsg)
-			   s.SocketIo.CheckBye(string(s.ReadMsg),s.IsCloseChan)
-		 case <-s.IsCloseChan:
+			   s.SocketIo.CheckBye(s.ReadMsg,s.IsCloseServerChan)
+		 case <-s.IsCloseServerChan:
+		 	fmt.Println("close server")
 		 	goto END
 		}
 	}
