@@ -1,6 +1,8 @@
-package service
+package socket
 
-import "net"
+import (
+	"net"
+)
 
 type SocketSendBase interface {
 	Write(conn *net.TCPConn, data []byte) (int, error)
@@ -8,6 +10,11 @@ type SocketSendBase interface {
 	Receive(receiveMsg []byte)
 	Close(conn *net.TCPConn) error
 }
+
+type ServerTcpBase interface {
+	Write(conn *net.TCPConn, data []byte) (int, error)
+}
+
 
 type SocketBase struct {
 	TcpAddr *net.TCPAddr
@@ -27,5 +34,12 @@ func NewClientMsg() *ClientMsg {
 		InputMsgChan: make(chan string),
 		ReadMsgChan:make(chan []byte),
 		IsCloseChan:make(chan bool),
+	}
+}
+
+func NewSocketBase(addr *net.TCPAddr,conn *net.TCPConn) ( SocketBase ) {
+	return SocketBase{
+         TcpAddr:addr,
+         TcpConn:conn,
 	}
 }

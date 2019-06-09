@@ -42,7 +42,9 @@ END:
 }
 
 func (s *StdInIo) Close() {
-	s.IsCloseChan <- true
+	go func() {
+		s.IsCloseChan <- true
+	}()
 }
 
 func NewStdInIo() *StdInIo {

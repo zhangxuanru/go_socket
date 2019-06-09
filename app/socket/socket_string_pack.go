@@ -1,4 +1,4 @@
-package service
+package socket
 
 import (
 	"errors"
@@ -20,11 +20,11 @@ func (s *stringPack) Read(conn *net.TCPConn,readChan chan []byte) (err error) {
 	if conn == nil {
 		return  errors.New("conn is nil")
 	}
-	buf := make([]byte, 1024)
 	for{
 		if conn == nil{
 			 goto CLOSE
 		}
+		buf := make([]byte, 1024)
 		if _, err = conn.Read(buf); err != nil {
 			 goto CLOSE
 		}
@@ -33,6 +33,7 @@ func (s *stringPack) Read(conn *net.TCPConn,readChan chan []byte) (err error) {
 	return   err
 	CLOSE:
 		fmt.Println("read close error:",err)
+	    //readChan<-[]byte("bye")
 	return  err
 }
 
@@ -42,5 +43,5 @@ func (s *stringPack) Close(conn *net.TCPConn) error {
 
 
 func (s *stringPack) Receive(receiveMsg []byte)  {
- fmt.Println("receiveMsg:",receiveMsg)
+ fmt.Printf("receiveMsg:%s\n",string(receiveMsg))
 }

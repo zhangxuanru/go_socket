@@ -1,4 +1,4 @@
-package service
+package socket
 
 import (
 	"strings"
@@ -30,7 +30,9 @@ func (s *SocketIo) WriteData(msg string) {
 
 func (s *SocketIo) CheckBye (msg string,IsCloseChan chan bool)  {
     if strings.EqualFold(msg,"bye"){
-		IsCloseChan<-true
+    	go func() {
+			IsCloseChan<-true
+		}()
 	}
 }
 

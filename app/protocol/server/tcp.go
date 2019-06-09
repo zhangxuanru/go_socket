@@ -2,53 +2,51 @@ package server
 
 import (
 	"net"
-	"socket/app/common"
 	"fmt"
 	"socket/app/protocol/io"
-	"socket/app/service"
+	"socket/app/socket"
+	"socket/app/common"
+	"runtime"
 )
 
 type server struct {
-	*service.ClientMsg
-	servicePck *service.ServerPack
+	*socket.ClientMsg
+    *socket.SocketIo
+	tcpAddr *net.TCPAddr
+	tcpListen *net.TCPListener
 }
 
 func Init()  {
     s := &server{
-		ClientMsg:service.NewClientMsg(),
-    	servicePck:service.NewServerPack(),
+		ClientMsg: socket.NewClientMsg(),
 	}
     if err := s.Listen();err!=nil{
-    	fmt.Println("error:",err)
     	return
 	}
 }
 
 func (s *server) Listen() error {
 	var(
-		tcpAddr *net.TCPAddr
-		tcpListen *net.TCPListener
 		tcpConn *net.TCPConn
 		err error
 	)
-    if tcpAddr,err = net.ResolveTCPAddr(common.GetNetWorkType(),common.GetServerAddress());err!=nil{
+    if s.tcpAddr,err = net.ResolveTCPAddr(common.GetNetWorkType(),common.GetServerAddress());err!=nil{
     	goto PrintErr
 	}
-	if tcpListen,err = net.ListenTCP(common.GetNetWorkType(),tcpAddr);err!=nil{
+	if s.tcpListen,err = net.ListenTCP(common.GetNetWorkType(),s.tcpAddr);err!=nil{
 		goto PrintErr
 	}
-	fmt.Println("ListenTCP:",tcpAddr.String()," start")
+	fmt.Println("ListenTCP:",s.tcpAddr.String()," start")
 	go io.NewStdInIo().OutStdInMsgByChan(s.InputMsgChan)
-	defer tcpListen.Close()
+	defer s.tcpListen.Close()
 	for{
-		if tcpConn,err = tcpListen.AcceptTCP();err!=nil{
+		if tcpConn,err = s.tcpListen.AcceptTCP();err!=nil{
 			fmt.Println("error:",err)
 			continue
 		}
        go s.handleClient(tcpConn)
 	}
-	return err
-
+	return nil
 	PrintErr:
 		fmt.Println("error:",err)
 	return err
@@ -61,15 +59,29 @@ func (s *server) handleClient(conn *net.TCPConn) {
 		 }
 	 }(conn)
      s.PrintClientConnMsg(conn)
+	 sockConnBase := socket.NewSocketBase(s.tcpAddr,conn)
+	 s.SocketIo = socket.NewSocketIo(sockConnBase)
+	 go s.SocketIo.SocketPack.Read(conn,s.ReadMsgChan)
      for{
 		 select {
 		 case s.InputMsg = <- s.InputMsgChan:
-                s.servicePck.Write(conn,[]byte(s.InputMsg))
+		 	fmt.Println("--server input--:")
+               s.SocketIo.SocketPack.Write(conn,[]byte(s.InputMsg))
+		       s.SocketIo.CheckBye(s.InputMsg,s.IsCloseChan)
+		 case s.ReadMsg = <-s.ReadMsgChan:
+		 	fmt.Println("---server read :--")
+		 	   s.SocketIo.SocketPack.Receive(s.ReadMsg)
+			   s.SocketIo.CheckBye(string(s.ReadMsg),s.IsCloseChan)
+		 case <-s.IsCloseChan:
+		 	goto END
 		}
-	 }
+	}
+	END:
+		fmt.Println("conn end:",conn.RemoteAddr().String())
+	    s.SocketIo.SocketPack.Close(conn)
 }
 
 func (s *server) PrintClientConnMsg(conn *net.TCPConn)  {
-      fmt.Println(conn.RemoteAddr().String())
+      fmt.Println("client:",conn.RemoteAddr().String(),"maxgoroutine:",runtime.NumGoroutine())
 }
 

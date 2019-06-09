@@ -5,19 +5,19 @@ import (
 	"net"
 	"socket/app/common"
 	"socket/app/protocol/io"
-	"socket/app/service"
+	"socket/app/socket"
 )
 
 var err error
 
 type Client struct {
-	 service.SocketBase
-	*service.ClientMsg
+	 socket.SocketBase
+	*socket.ClientMsg
 }
 
 func Init() {
 	c := &Client{
-		ClientMsg: service.NewClientMsg(),
+		ClientMsg: socket.NewClientMsg(),
 	}
 	if c.connServer() != nil {
 		fmt.Println("连接TCP服务器失败")
@@ -42,6 +42,7 @@ PrintErr:
 }
 
 func (c *Client) handle() {
+	fmt.Println("handle........")
 	var (
 		stdInIo *io.StdInIo
 	)
@@ -50,7 +51,7 @@ func (c *Client) handle() {
 		return
 	}
 	stdInIo = io.NewStdInIo()
-	socketIo := service.NewSocketIo(c.SocketBase)
+	socketIo := socket.NewSocketIo(c.SocketBase)
 	go stdInIo.OutStdInMsgByChan(c.InputMsgChan)
 	go socketIo.SocketPack.Read(c.TcpConn,c.ReadMsgChan)
 
@@ -62,7 +63,8 @@ func (c *Client) handle() {
 		case c.ClientMsg.ReadMsg = <-c.ReadMsgChan:
 			  socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
 			  socketIo.CheckBye(string(c.ClientMsg.ReadMsg),c.IsCloseChan)
-		case <-c.IsCloseChan:
+		case   <-c.IsCloseChan:
+			   fmt.Println("IsCloseChan--true")
                goto  END
 		}
 	}
