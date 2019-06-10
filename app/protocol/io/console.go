@@ -9,7 +9,8 @@ import (
 )
 
 type StdInIo struct {
-	IsCloseChan chan bool
+	IsCloseChan      chan bool
+	IsAutoStdInClose bool
 }
 
 func (s *StdInIo) GetStdInMsg() (string, error) {
@@ -32,7 +33,7 @@ func (s *StdInIo) OutStdInMsgByChan(outMsg chan<- string) {
 			}
 			msg = strings.TrimSpace(msg)
 			outMsg <- msg
-			if common.IsMsgBye(msg) {
+			if s.IsAutoStdInClose && common.IsMsgBye(msg) {
 				goto END
 			}
 		}
@@ -48,8 +49,9 @@ func (s *StdInIo) Close() {
 	}()
 }
 
-func NewStdInIo() *StdInIo {
+func NewStdInIo(autoClose bool) *StdInIo {
 	return &StdInIo{
-		IsCloseChan: make(chan bool),
+		IsCloseChan:      make(chan bool),
+		IsAutoStdInClose: autoClose,
 	}
 }

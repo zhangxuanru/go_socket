@@ -5,19 +5,19 @@ import (
 	"net"
 	"socket/app/common"
 	"socket/app/protocol/io"
-	"socket/app/socket"
+	"socket/app/trans"
 )
 
 var err error
 
 type Client struct {
-	 socket.SocketBase
-	*socket.ClientMsg
+	trans.SocketBase
+	*trans.ClientMsg
 }
 
 func Init() {
 	c := &Client{
-		ClientMsg: socket.NewClientMsg(),
+		ClientMsg: trans.NewClientMsg(),
 	}
 	if c.connServer() != nil {
 		fmt.Println("连接TCP服务器失败")
@@ -42,7 +42,6 @@ PrintErr:
 }
 
 func (c *Client) handle() {
-	fmt.Println("handle........")
 	var (
 		stdInIo *io.StdInIo
 	)
@@ -50,25 +49,25 @@ func (c *Client) handle() {
 		fmt.Println("连接出错.....")
 		return
 	}
-	stdInIo = io.NewStdInIo()
-	socketIo := socket.NewSocketIo(c.SocketBase)
+	stdInIo = io.NewStdInIo(true)
+	socketIo := trans.NewSocketIo(c.SocketBase)
 	go stdInIo.OutStdInMsgByChan(c.InputMsgChan)
-	go socketIo.SocketPack.Read(c.TcpConn,c.ReadMsgChan)
+	go socketIo.SocketPack.Read(c.TcpConn, c.ReadMsgChan)
 
 	for {
 		select {
 		case c.ClientMsg.InputMsg = <-c.InputMsgChan:
-			  socketIo.WriteData(c.ClientMsg.InputMsg)
-		      socketIo.CheckBye([]byte(c.ClientMsg.InputMsg),c.IsCloseChan)
+			socketIo.WriteData(c.ClientMsg.InputMsg)
+			common.CheckBye([]byte(c.ClientMsg.InputMsg), c.IsCloseChan)
 		case c.ClientMsg.ReadMsg = <-c.ReadMsgChan:
-			  socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
-			  socketIo.CheckBye(c.ClientMsg.ReadMsg,c.IsCloseChan)
-		case  <-c.IsCloseChan:
-               goto  END
+			socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
+			common.CheckBye(c.ClientMsg.ReadMsg, c.IsCloseChan)
+		case <-c.IsCloseChan:
+			goto END
 		}
 	}
-	END:
-		fmt.Println("handle end")
-	    stdInIo.Close()
-	    socketIo.SocketPack.Close(c.TcpConn)
+END:
+	fmt.Println("handle end")
+	stdInIo.Close()
+	socketIo.SocketPack.Close(c.TcpConn)
 }
