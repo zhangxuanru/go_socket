@@ -79,6 +79,7 @@ func (s *server) handleClient(conn *net.TCPConn) {
 END:
 	fmt.Println("conn end:", conn.RemoteAddr().String())
 	s.SocketIo.SocketPack.Close(conn)
+	fmt.Println("end handleClient.......")
 }
 
 func (s *server) PrintClientConnMsg(conn *net.TCPConn) {

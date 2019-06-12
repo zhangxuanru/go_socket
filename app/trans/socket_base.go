@@ -1,7 +1,11 @@
 package trans
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"net"
+	"socket/app/common"
 )
 
 type SocketSendBase interface {
@@ -43,4 +47,50 @@ func NewSocketBase(addr *net.TCPAddr, conn *net.TCPConn) SocketBase {
 		TcpAddr: addr,
 		TcpConn: conn,
 	}
+}
+
+func TcpRead(conn *net.TCPConn, readChan chan []byte) (err error) {
+	var (
+		tmpBuf []byte
+		buf    []byte
+	)
+	if conn == nil {
+		return errors.New("conn is nil")
+	}
+	tmpBuf = make([]byte, 0)
+	unpackChan := make(chan []byte)
+	for {
+		if conn == nil {
+			goto CLOSE
+		}
+		buf = make([]byte, 1024)
+		_, err = conn.Read(buf)
+		if err != nil {
+			goto CLOSE
+		}
+		go func() {
+			for {
+				select {
+				case packBuf := <-unpackChan:
+					if common.IsBufBye(packBuf) {
+						err = io.EOF
+						goto CLOSE
+					}
+					readChan <- packBuf
+				}
+			}
+		CLOSE:
+		}()
+		//解包
+		tmpBuf = UnPack(append(tmpBuf, buf...), unpackChan)
+	}
+	return err
+CLOSE:
+	tmpBuf = make([]byte, 0)
+	buf = make([]byte, 0)
+	fmt.Println("read close......")
+	if err != nil && err == io.EOF {
+		readChan <- []byte("bye")
+	}
+	return err
 }
