@@ -69,6 +69,10 @@ func (s *server) handleClient(conn *net.TCPConn) {
 			s.SocketIo.SocketPack.Write(conn, []byte(s.InputMsg))
 			common.CheckBye([]byte(s.InputMsg), s.IsCloseServerChan)
 		case s.ReadMsg = <-s.ReadMsgChan:
+			// 这里去掉前缀 明天加
+			//msg = bytes.Replace(msg, []byte(config.SEND_STR_HEADER_PACK), []byte(""), -1)
+			//msg = bytes.Replace(msg, []byte(config.SEND_FILE_HEADER_PACK), []byte(""), -1)
+
 			s.SocketIo.SocketPack.Receive(s.ReadMsg)
 			common.CheckBye(s.ReadMsg, s.IsCloseServerChan)
 		case <-s.IsCloseServerChan:
