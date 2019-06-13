@@ -13,7 +13,6 @@ type SocketSendBase interface {
 
 type SocketSendClose interface {
 	Close(conn *net.TCPConn) error
-	ClosePack()
 }
 
 type ServerTcpBase interface {

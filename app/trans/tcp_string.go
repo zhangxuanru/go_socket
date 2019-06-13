@@ -66,7 +66,9 @@ func (s *TcpStringPack) Close(conn *net.TCPConn) error {
 
 func (s *TcpStringPack) Receive(receiveMsg []byte) {
 	if common.IsBufBye(receiveMsg) {
-		go s.ClosePack()
+		go func() {
+			s.closeChan <- true
+		}()
 	}
 	fmt.Printf("receiveMsg:%s\n", string(receiveMsg))
 }
@@ -75,8 +77,4 @@ func NewTcpStringPack() *TcpStringPack {
 	return &TcpStringPack{
 		closeChan: make(chan bool),
 	}
-}
-
-func (s *TcpStringPack) ClosePack() {
-	s.closeChan <- true
 }

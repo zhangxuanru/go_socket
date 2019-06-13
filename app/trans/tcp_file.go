@@ -37,7 +37,3 @@ func NewTcpFilePack() *TcpFilePack {
 		closeChan: make(chan bool),
 	}
 }
-
-func (s *TcpFilePack) ClosePack() {
-	s.closeChan <- true
-}
