@@ -50,7 +50,7 @@ func (c *Client) handle() {
 		return
 	}
 	stdInIo = io.NewStdInIo(true)
-	socketIo := trans.NewSocketIo(c.SocketBase)
+	socketIo := trans.NewSocketIo(c.SocketBase, trans.SEND_STRING)
 	go stdInIo.OutStdInMsgByChan(c.InputMsgChan)
 	go socketIo.SocketPack.Read(c.TcpConn, c.ReadMsgChan)
 

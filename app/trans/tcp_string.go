@@ -36,6 +36,7 @@ func (s *TcpStringPack) Read(conn *net.TCPConn, readChan chan []byte) (err error
 		}
 		select {
 		case <-s.closeChan:
+			fmt.Println("---closeChan--")
 			err = errors.New("auto close")
 			goto CLOSE
 		default:
@@ -65,7 +66,7 @@ func (s *TcpStringPack) Close(conn *net.TCPConn) error {
 
 func (s *TcpStringPack) Receive(receiveMsg []byte) {
 	if common.IsBufBye(receiveMsg) {
-		s.ClosePack()
+		go s.ClosePack()
 	}
 	fmt.Printf("receiveMsg:%s\n", string(receiveMsg))
 }

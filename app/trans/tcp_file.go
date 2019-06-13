@@ -28,7 +28,8 @@ func (s *TcpFilePack) Close(conn *net.TCPConn) error {
 }
 
 func (s *TcpFilePack) Receive(receiveMsg []byte) {
-	fmt.Println("receiveMsg:", receiveMsg)
+	fmt.Println("file:----")
+	fmt.Println("receiveMsg:", string(receiveMsg))
 }
 
 func NewTcpFilePack() *TcpFilePack {

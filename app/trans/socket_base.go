@@ -8,7 +8,12 @@ type SocketSendBase interface {
 	Write(conn *net.TCPConn, data []byte) (int, error)
 	Read(conn *net.TCPConn, readMsgChan chan []byte) error
 	Receive(receiveMsg []byte)
+	SocketSendClose
+}
+
+type SocketSendClose interface {
 	Close(conn *net.TCPConn) error
+	ClosePack()
 }
 
 type ServerTcpBase interface {

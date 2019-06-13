@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"socket/app/config"
 	"strings"
 )
 
@@ -34,4 +35,10 @@ func CheckBye(msg []byte, IsCloseChan chan bool) {
 			IsCloseChan <- true
 		}()
 	}
+}
+
+func RemoveStrSendHeader(byt []byte) []byte {
+	byt = bytes.TrimPrefix(byt, []byte(config.SEND_FILE_HEADER_PACK))
+	byt = bytes.TrimPrefix(byt, []byte(config.SEND_STR_HEADER_PACK))
+	return byt
 }

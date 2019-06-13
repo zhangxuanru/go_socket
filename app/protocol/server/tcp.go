@@ -60,7 +60,7 @@ func (s *server) handleClient(conn *net.TCPConn) {
 	}(conn)
 	s.PrintClientConnMsg(conn)
 	sockConnBase := trans.NewSocketBase(s.tcpAddr, conn)
-	s.SocketIo = trans.NewSocketIo(sockConnBase)
+	s.SocketIo = trans.NewSocketIo(sockConnBase, trans.SEND_STRING)
 	go s.SocketIo.SocketPack.Read(conn, s.ReadMsgChan)
 
 	for {
@@ -69,10 +69,10 @@ func (s *server) handleClient(conn *net.TCPConn) {
 			s.SocketIo.SocketPack.Write(conn, []byte(s.InputMsg))
 			common.CheckBye([]byte(s.InputMsg), s.IsCloseServerChan)
 		case s.ReadMsg = <-s.ReadMsgChan:
-			// 这里去掉前缀 明天加
-			//msg = bytes.Replace(msg, []byte(config.SEND_STR_HEADER_PACK), []byte(""), -1)
-			//msg = bytes.Replace(msg, []byte(config.SEND_FILE_HEADER_PACK), []byte(""), -1)
-
+			if s.SocketIo.IsStrByCurrPack(s.ReadMsg) == false {
+				s.SocketIo.ResetSocketPack()
+			}
+			s.ReadMsg = common.RemoveStrSendHeader(s.ReadMsg)
 			s.SocketIo.SocketPack.Receive(s.ReadMsg)
 			common.CheckBye(s.ReadMsg, s.IsCloseServerChan)
 		case <-s.IsCloseServerChan:
