@@ -1,9 +1,10 @@
-package trans
+package socket
 
 import (
 	"socket/app/common"
 	"socket/app/config"
 	"strings"
+	"socket/app/package/trans"
 )
 
 const SEND_STRING = 1
@@ -11,7 +12,7 @@ const SEND_FILE = 2
 
 type SocketIo struct {
 	SocketBase
-	SocketPack    SocketSendBase
+	SocketPack    SocketSendBaseer
 	TransportType string
 	SendType      int
 }
@@ -41,12 +42,12 @@ func (s *SocketIo) WriteData(msg string) {
 }
 
 func (s *SocketIo) SetFilePack() {
-	s.SocketPack = NewTcpFilePack()
+	s.SocketPack = trans.NewTcpFilePack()
 	s.SendType = SEND_FILE
 }
 
 func (s *SocketIo) SetStringPack() {
-	s.SocketPack = NewTcpStringPack()
+	s.SocketPack = trans.NewTcpStringPack()
 	s.SendType = SEND_STRING
 }
 
@@ -84,3 +85,8 @@ func NewSocketIo(sockBase SocketBase, sendType int) *SocketIo {
 	socketIo.initSockPack(sendType)
 	return socketIo
 }
+
+
+
+
+

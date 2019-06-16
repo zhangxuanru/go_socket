@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"net"
 	"socket/app/common"
-	"socket/app/protocol/io"
-	"socket/app/trans"
+	"socket/app/package/io"
+	"socket/app/package/socket"
 )
 
 var err error
 
 type Client struct {
-	trans.SocketBase
-	*trans.ClientMsg
+	socket.SocketBase
+	*socket.ClientMsg
 }
 
 func Init() {
 	c := &Client{
-		ClientMsg: trans.NewClientMsg(),
+		ClientMsg: socket.NewClientMsg(),
 	}
 	if c.connServer() != nil {
 		fmt.Println("连接TCP服务器失败")
@@ -50,7 +50,7 @@ func (c *Client) handle() {
 		return
 	}
 	stdInIo = io.NewStdInIo(true)
-	socketIo := trans.NewSocketIo(c.SocketBase, trans.SEND_STRING)
+	socketIo := socket.NewSocketIo(c.SocketBase, socket.SEND_STRING)
 	go stdInIo.OutStdInMsgByChan(c.InputMsgChan)
 	go socketIo.SocketPack.Read(c.TcpConn, c.ReadMsgChan)
 
@@ -60,6 +60,10 @@ func (c *Client) handle() {
 			socketIo.WriteData(c.ClientMsg.InputMsg)
 			common.CheckBye([]byte(c.ClientMsg.InputMsg), c.IsCloseChan)
 		case c.ClientMsg.ReadMsg = <-c.ReadMsgChan:
+			if socketIo.IsStrByCurrPack(c.ClientMsg.ReadMsg) == false {
+				socketIo.ResetSocketPack()
+			}
+			c.ClientMsg.ReadMsg = common.RemoveStrSendHeader(c.ClientMsg.ReadMsg)
 			socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
 			common.CheckBye(c.ClientMsg.ReadMsg, c.IsCloseChan)
 		case <-c.IsCloseChan:

@@ -42,3 +42,7 @@ func RemoveStrSendHeader(byt []byte) []byte {
 	byt = bytes.TrimPrefix(byt, []byte(config.SEND_STR_HEADER_PACK))
 	return byt
 }
+
+func RemoveFilePrefixMsg(msg []byte) []byte {
+	return bytes.TrimPrefix(msg, []byte("file:"))
+}

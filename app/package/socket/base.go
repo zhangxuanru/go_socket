@@ -1,21 +1,21 @@
-package trans
+package socket
 
 import (
 	"net"
 )
 
-type SocketSendBase interface {
+type SocketSendBaseer interface {
 	Write(conn *net.TCPConn, data []byte) (int, error)
 	Read(conn *net.TCPConn, readMsgChan chan []byte) error
 	Receive(receiveMsg []byte)
-	SocketSendClose
+	SocketSendCloseer
 }
 
-type SocketSendClose interface {
+type SocketSendCloseer interface {
 	Close(conn *net.TCPConn) error
 }
 
-type ServerTcpBase interface {
+type ServerTcpBaseer interface {
 	Write(conn *net.TCPConn, data []byte) (int, error)
 }
 

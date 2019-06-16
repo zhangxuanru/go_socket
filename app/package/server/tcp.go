@@ -5,20 +5,20 @@ import (
 	"net"
 	"runtime"
 	"socket/app/common"
-	"socket/app/protocol/io"
-	"socket/app/trans"
+	"socket/app/package/io"
+	"socket/app/package/socket"
 )
 
 type server struct {
-	*trans.ClientMsg
-	*trans.SocketIo
+	*socket.ClientMsg
+	*socket.SocketIo
 	tcpAddr   *net.TCPAddr
 	tcpListen *net.TCPListener
 }
 
 func Init() {
 	s := &server{
-		ClientMsg: trans.NewClientMsg(),
+		ClientMsg: socket.NewClientMsg(),
 	}
 	if err := s.Listen(); err != nil {
 		return
@@ -59,8 +59,8 @@ func (s *server) handleClient(conn *net.TCPConn) {
 		}
 	}(conn)
 	s.PrintClientConnMsg(conn)
-	sockConnBase := trans.NewSocketBase(s.tcpAddr, conn)
-	s.SocketIo = trans.NewSocketIo(sockConnBase, trans.SEND_STRING)
+	sockConnBase := socket.NewSocketBase(s.tcpAddr, conn)
+	s.SocketIo = socket.NewSocketIo(sockConnBase, socket.SEND_STRING)
 	go s.SocketIo.SocketPack.Read(conn, s.ReadMsgChan)
 
 	for {

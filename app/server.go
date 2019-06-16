@@ -1,7 +1,7 @@
 package main
 
 import (
-	"socket/app/protocol/server"
+	"socket/app/package/server"
 )
 
 func main() {

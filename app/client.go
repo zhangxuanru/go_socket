@@ -1,6 +1,6 @@
 package main
 
-import "socket/app/protocol/client"
+import "socket/app/package/client"
 
 func main() {
 	client.Init()
