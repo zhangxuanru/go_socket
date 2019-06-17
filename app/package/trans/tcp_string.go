@@ -30,11 +30,11 @@ func (s *TcpStringPack) Close(conn *net.TCPConn) error {
 	return conn.Close()
 }
 
-func (s *TcpStringPack) Receive(receiveMsg []byte) {
+func (s *TcpStringPack) Receive(receiveMsg []byte, receiveChan chan []byte, source string) {
 	if common.IsBufBye(receiveMsg) {
 		NewRead().Close()
 	}
-	fmt.Printf("receiveMsg:%s\n", string(receiveMsg))
+	fmt.Printf("string receiveMsg:%s\n", string(receiveMsg))
 }
 
 func NewTcpStringPack() *TcpStringPack {

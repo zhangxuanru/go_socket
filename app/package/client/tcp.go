@@ -5,6 +5,7 @@ import (
 	"net"
 	"os/signal"
 	"socket/app/common"
+	"socket/app/config"
 	"socket/app/package/io"
 	"socket/app/package/socket"
 	"source/openbilibili-go-common/library/syscall"
@@ -67,10 +68,9 @@ func (c *Client) handle() {
 				socketIo.ResetSocketPack()
 			}
 			c.ClientMsg.ReadMsg = common.RemoveStrSendHeader(c.ClientMsg.ReadMsg)
-			socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
+			socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg, c.ClientMsg.ReceiveChan, config.CLIENTIDENT)
 			common.CheckBye(c.ClientMsg.ReadMsg, c.IsCloseChan)
 		case <-c.Signal:
-			fmt.Println("-------:Signal")
 			socketIo.WriteData("bye")
 			goto END
 		case <-c.IsCloseChan:

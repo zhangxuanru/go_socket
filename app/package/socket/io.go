@@ -38,6 +38,8 @@ func (s *SocketIo) WriteData(msg string) {
 	}
 	if strings.HasPrefix(msg, "file:") {
 		s.SetFilePack()
+	} else {
+		s.SetStringPack()
 	}
 	s.SocketPack.Write(s.TcpConn, []byte(msg))
 }

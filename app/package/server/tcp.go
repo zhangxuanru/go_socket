@@ -5,6 +5,7 @@ import (
 	"net"
 	"runtime"
 	"socket/app/common"
+	"socket/app/config"
 	"socket/app/package/io"
 	"socket/app/package/socket"
 )
@@ -73,8 +74,11 @@ func (s *server) handleClient(conn *net.TCPConn) {
 				s.SocketIo.ResetSocketPack()
 			}
 			s.ReadMsg = common.RemoveStrSendHeader(s.ReadMsg)
-			s.SocketIo.SocketPack.Receive(s.ReadMsg)
+			s.SocketIo.SocketPack.Receive(s.ReadMsg, s.ReceiveChan, config.SERVERIDENT)
 			common.CheckBye(s.ReadMsg, s.IsCloseServerChan)
+		case receiveMsg := <-s.ReceiveChan:
+			fmt.Println(string(receiveMsg))
+			s.SocketIo.SocketPack.Write(conn, receiveMsg)
 		case <-s.IsCloseServerChan:
 			fmt.Println("close server")
 			goto END

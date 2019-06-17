@@ -9,4 +9,7 @@ const (
 
 	SEND_STR_HEADER_PACK  = "#strgPack#"
 	SEND_FILE_HEADER_PACK = "#filePack#"
+
+	CLIENTIDENT = "client"
+	SERVERIDENT = "server"
 )

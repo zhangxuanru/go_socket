@@ -8,7 +8,7 @@ import (
 type SocketSendBaseer interface {
 	Write(conn *net.TCPConn, data []byte) (int, error)
 	Read(conn *net.TCPConn, readMsgChan chan []byte) error
-	Receive(receiveMsg []byte)
+	Receive(receiveMsg []byte, receiveChan chan []byte, source string)
 	SocketSendCloseer
 }
 
@@ -32,6 +32,7 @@ type ClientMsg struct {
 	ReadMsgChan       chan []byte
 	IsCloseChan       chan bool
 	IsCloseServerChan chan bool
+	ReceiveChan       chan []byte
 	Signal            chan os.Signal
 }
 
@@ -41,6 +42,7 @@ func NewClientMsg() *ClientMsg {
 		ReadMsgChan:       make(chan []byte),
 		IsCloseChan:       make(chan bool),
 		IsCloseServerChan: make(chan bool),
+		ReceiveChan:       make(chan []byte),
 		Signal:            make(chan os.Signal),
 	}
 }
