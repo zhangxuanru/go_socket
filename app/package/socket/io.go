@@ -1,10 +1,11 @@
 package socket
 
 import (
+	"net"
 	"socket/app/common"
 	"socket/app/config"
-	"strings"
 	"socket/app/package/trans"
+	"strings"
 )
 
 const SEND_STRING = 1
@@ -39,6 +40,10 @@ func (s *SocketIo) WriteData(msg string) {
 		s.SetFilePack()
 	}
 	s.SocketPack.Write(s.TcpConn, []byte(msg))
+}
+
+func (s *SocketIo) ReadData(conn *net.TCPConn, readChan chan []byte) {
+	trans.NewRead().Read(conn, readChan)
 }
 
 func (s *SocketIo) SetFilePack() {
@@ -85,8 +90,3 @@ func NewSocketIo(sockBase SocketBase, sendType int) *SocketIo {
 	socketIo.initSockPack(sendType)
 	return socketIo
 }
-
-
-
-
-

@@ -19,16 +19,14 @@ func (s *TcpFilePack) Write(conn *net.TCPConn, data []byte) (int, error) {
 	if conn == nil {
 		return 0, errors.New("conn is nil")
 	}
+	header := []byte(config.SEND_FILE_HEADER_PACK)
+	conn.Write(Pack(header))
 	SendFile(conn, data)
-
-	fmt.Println(string(data))
-
-	data = append([]byte(config.SEND_FILE_HEADER_PACK), data...)
-	return conn.Write(Pack(data))
+	return 0, nil
 }
 
 func (s *TcpFilePack) Read(conn *net.TCPConn, readMsgChan chan []byte) (err error) {
-	NewRead().Read(conn, readMsgChan)
+	//NewRead().Read(conn, readMsgChan)
 	return nil
 }
 
@@ -63,7 +61,7 @@ func SendFile(conn *net.TCPConn, fileMsg []byte) (err error) {
 		if e == io.EOF {
 			break
 		}
-		conn.Write(buf[:n])
+		conn.Write(Pack(buf[:n]))
 	}
 	conn.Write([]byte("end:" + file))
 	return

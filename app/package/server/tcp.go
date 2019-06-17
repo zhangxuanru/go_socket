@@ -61,7 +61,7 @@ func (s *server) handleClient(conn *net.TCPConn) {
 	s.PrintClientConnMsg(conn)
 	sockConnBase := socket.NewSocketBase(s.tcpAddr, conn)
 	s.SocketIo = socket.NewSocketIo(sockConnBase, socket.SEND_STRING)
-	go s.SocketIo.SocketPack.Read(conn, s.ReadMsgChan)
+	go s.SocketIo.ReadData(conn, s.ReadMsgChan)
 
 	for {
 		select {
@@ -80,10 +80,12 @@ func (s *server) handleClient(conn *net.TCPConn) {
 			goto END
 		}
 	}
+	return
 END:
 	fmt.Println("conn end:", conn.RemoteAddr().String())
 	s.SocketIo.SocketPack.Close(conn)
-	fmt.Println("end handleClient.......")
+	fmt.Println("end handleClient.......", "--maxgoroutine:", runtime.NumGoroutine())
+	return
 }
 
 func (s *server) PrintClientConnMsg(conn *net.TCPConn) {

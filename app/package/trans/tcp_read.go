@@ -3,7 +3,6 @@ package trans
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net"
 )
 
@@ -43,9 +42,6 @@ CLOSE:
 	tmpBuf = make([]byte, 0)
 	buf = make([]byte, 0)
 	fmt.Println("read close......")
-	if err != nil && err == io.EOF {
-		readChan <- []byte("bye")
-	}
 	return err
 }
 

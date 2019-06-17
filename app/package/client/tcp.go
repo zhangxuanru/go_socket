@@ -3,9 +3,11 @@ package client
 import (
 	"fmt"
 	"net"
+	"os/signal"
 	"socket/app/common"
 	"socket/app/package/io"
 	"socket/app/package/socket"
+	"source/openbilibili-go-common/library/syscall"
 )
 
 var err error
@@ -23,8 +25,9 @@ func Init() {
 		fmt.Println("连接TCP服务器失败")
 		return
 	}
+	signal.Notify(c.Signal, syscall.SIGINT, syscall.SIGTERM)
 	c.handle()
-	fmt.Println("bye bye")
+	fmt.Println("bye--- bye")
 }
 
 func (c *Client) connServer() error {
@@ -52,7 +55,7 @@ func (c *Client) handle() {
 	stdInIo = io.NewStdInIo(true)
 	socketIo := socket.NewSocketIo(c.SocketBase, socket.SEND_STRING)
 	go stdInIo.OutStdInMsgByChan(c.InputMsgChan)
-	go socketIo.SocketPack.Read(c.TcpConn, c.ReadMsgChan)
+	go socketIo.ReadData(c.TcpConn, c.ReadMsgChan)
 
 	for {
 		select {
@@ -66,12 +69,18 @@ func (c *Client) handle() {
 			c.ClientMsg.ReadMsg = common.RemoveStrSendHeader(c.ClientMsg.ReadMsg)
 			socketIo.SocketPack.Receive(c.ClientMsg.ReadMsg)
 			common.CheckBye(c.ClientMsg.ReadMsg, c.IsCloseChan)
+		case <-c.Signal:
+			fmt.Println("-------:Signal")
+			socketIo.WriteData("bye")
+			goto END
 		case <-c.IsCloseChan:
 			goto END
 		}
 	}
+	return
 END:
 	fmt.Println("handle end")
 	stdInIo.Close()
 	socketIo.SocketPack.Close(c.TcpConn)
+	return
 }

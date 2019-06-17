@@ -2,6 +2,7 @@ package socket
 
 import (
 	"net"
+	"os"
 )
 
 type SocketSendBaseer interface {
@@ -31,6 +32,7 @@ type ClientMsg struct {
 	ReadMsgChan       chan []byte
 	IsCloseChan       chan bool
 	IsCloseServerChan chan bool
+	Signal            chan os.Signal
 }
 
 func NewClientMsg() *ClientMsg {
@@ -39,6 +41,7 @@ func NewClientMsg() *ClientMsg {
 		ReadMsgChan:       make(chan []byte),
 		IsCloseChan:       make(chan bool),
 		IsCloseServerChan: make(chan bool),
+		Signal:            make(chan os.Signal),
 	}
 }
 

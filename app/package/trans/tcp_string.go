@@ -21,7 +21,7 @@ func (s *TcpStringPack) Write(conn *net.TCPConn, data []byte) (int, error) {
 }
 
 func (s *TcpStringPack) Read(conn *net.TCPConn, readChan chan []byte) (err error) {
-	NewRead().Read(conn, readChan)
+	//	NewRead().Read(conn, readChan)
 	return nil
 }
 
